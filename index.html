@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Chave de Ativação</title>
+  <style>
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 50px auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  h1 {
+    color: #333;
+    text-align: center;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical; /* Permitir redimensionamento vertical da textarea */
+  }
+
+  button {
+    background-color: #3498db;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  button:hover {
+    background-color: #2980b9;
+  }
+
+  #chaveGerada {
+    margin-top: 20px;
+    font-weight: bold;
+    color: #27ae60;
+  }
+
+  .confirmation-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccc;
+    z-index: 9999;
+    text-align: center;
+  }
+
+  .confirmation-container p {
+    margin: 10px 0;
+  }
+
+  .confirmation-container button {
+    margin: 5px;
+    padding: 8px;
+    cursor: pointer;
+  }
+
+  .confirmation-container button:hover {
+    background-color: #ddd;
+  }
+</style>
+ 
+</head>
+<body>
+
+  <div class="container">
+
+  <h1>Gerador de Chave de Ativação</h1>
+
+  <form id="activationForm">
+    <label for="activationCode">Activation Code:</label>
+    <input type="text" id="activationCode" required>
+
+    <label for="validFor">Escolha o Período:</label>
+    <select id="validFor">
+      <option value="">Selecione</option>
+      <option value="1">1 Dia</option>
+      <option value="7">7 Dias</option>
+      <option value="15">15 Dias</option>
+      <option value="30">30 Dias (Mensal)</option>
+      <option value="90">90 Dias (Trimestral)</option>
+      <option value="180">180 Dias (Semestral)</option>
+      <option value="360">360 Dias (Anual)</option>
+    </select>
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" required>
+
+    <label for="name">Nome:</label>
+    <input type="text" id="name" required>
+
+    <button type="button" onclick="gerarChaveAtivacao()">Gerar Chave</button>
+  </form>
+
+  <!-- <p id="chaveGerada"></p> -->
+  <textarea id="chaveGerada" rows="4" readonly></textarea>
+
+
+</div>
+
+  <script>
+       function gerarChaveAtivacao() {
+    const activationCodeInput = document.getElementById('activationCode');
+    const validForSelect = document.getElementById('validFor');
+    const emailInput = document.getElementById('email');
+    const nameInput = document.getElementById('name');
+
+    const activationCode = activationCodeInput.value.trim();
+    const validFor = parseInt(validForSelect.value, 10);
+    const email = emailInput.value.trim();
+    const name = nameInput.value.trim();
+
+    if (isNaN(validFor) || validFor <= 0 || !email || !name) {
+      alert('Por favor, preencha todos os campos corretamente.');
+      return;
+    }
+
+    // Variáveis para armazenar a chave de ativação e o JSON
+    let chaveAtivacaoJSON;
+    let chaveAtivacaoBase64;
+
+    // Criar um elemento para mostrar a confirmação
+    const confirmationElement = document.createElement('div');
+    confirmationElement.style.position = 'fixed';
+    confirmationElement.style.top = '50%';
+    confirmationElement.style.left = '50%';
+    confirmationElement.style.transform = 'translate(-50%, -50%)';
+    confirmationElement.style.background = 'white';
+    confirmationElement.style.padding = '20px';
+    confirmationElement.style.border = '1px solid #ccc';
+    confirmationElement.style.zIndex = '9999';
+    
+    // Conteúdo da confirmação
+    confirmationElement.innerHTML = `
+      <p>Confirme os dados:</p>
+      <p><strong>Activation Code:</strong> ${activationCode}</p>
+      <p><strong>Valid For:</strong> ${validFor} days</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Name:</strong> ${name}</p>
+      <button onclick="confirmarGeracao()">Confirmar</button>
+      <button onclick="cancelarGeracao()">Cancelar</button>
+    `;
+
+    // Adicionar à página
+    document.body.appendChild(confirmationElement);
+
+    // Definir funções para confirmar ou cancelar
+    window.confirmarGeracao = function() {
+      // Remover o elemento de confirmação
+      document.body.removeChild(confirmationElement);
+
+      // Continua gerando a chave
+      const currentDate = new Date();
+      const expirationDate = new Date(currentDate.getTime() + validFor * 24 * 60 * 60 * 1000);
+
+            // Codifica o Activation Code em Base64
+            const encodedActivationCode = btoa(activationCode);
+
+// Gera um código aleatório no formato MaisMediaXXXX
+const randomCode = 'Automatizape' + ('000' + Math.floor(Math.random() * 10000)).slice(-4);
+
+const chaveAtivacaoObj = {
+  ActivationCode: encodedActivationCode,
+  ValidDays: validFor,
+  StartDate: currentDate.toISOString(),
+  EndDate: expirationDate.toISOString(),
+  Item_id: "35762285",
+  purchaseCode: "afdd1dad-0896-405b-87c0-f5ed929cad17"
+};
+      chaveAtivacaoJSON = JSON.stringify(chaveAtivacaoObj);
+      chaveAtivacaoBase64 = btoa(chaveAtivacaoJSON);
+
+      const chaveGeradaElement = document.getElementById('chaveGerada');
+      chaveGeradaElement.textContent = `${chaveAtivacaoBase64}`;
+
+      enviarParaWordPress(activationCode, validFor, email, name, chaveAtivacaoBase64, randomCode);
+    };
+
+    window.cancelarGeracao = function() {
+      // Remover o elemento de confirmação
+      document.body.removeChild(confirmationElement);
+
+      // Cancela a geração da chave
+      alert('Geração de chave cancelada.');
+    };
+  }
+
+    function enviarParaWordPress(activationCode, validFor, email, name, chaveAtivacaoBase64, randomCode) {
+      const postData = {
+        title: `Licença ${randomCode} para ${name}`,
+        content: `Activation Code: ${activationCode}\nValid For: ${validFor} days\nEmail: ${email}\nName: ${name}\nLicença Gerada: ${chaveAtivacaoBase64}`,
+        status: 'publish'
+      };
+
+       // Get JWT token from wherever you store it (e.g., cookie or localStorage)
+       var jwtToken = 'IQP8r?7@$hoHl5bc9?ky9O#2[um@||HFl{@-YRf`hpF]0D%,B;#}J*Xp4r%~Y4m>'; // Replace with your actual token
+
+// Send POST request to WordPress REST API with JWT token
+fetch('http://localhost/wordpress/wp-json/jwt-auth/v1/token', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    username: 'admin',
+    password: 'admin'
+  })
+})
+.then(response => response.json())
+.then(data => {
+  // Use the obtained token to create the post
+  postData.token = data.token;
+
+  fetch('http://localhost/wordpress/wp-json/wp/v2/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + postData.token
+    },
+    body: JSON.stringify(postData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Post created successfully:', data);
+    // You can handle success here (e.g., redirect, display a message)
+    console.log(postData.token)
+  })
+  .catch(error => {
+    console.error('Error creating post:', error);
+    // You can handle errors here (e.g., display an error message)
+  });
+})
+.catch(error => {
+  console.error('Error obtaining JWT token:', error);
+  // Handle error while obtaining the token
+});
+    }
+  </script>
+
+</body>
+</html>
